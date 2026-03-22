@@ -122,19 +122,31 @@ function parseEnabled(value) {
   return Boolean(value);
 }
 
-function createPriorityResolver() {
-  let counter = 1;
-  return (value) => {
-    const parsed = typeof value === 'number'
-      ? value
-      : (typeof value === 'string' ? Number(value.trim()) : NaN);
+function resolvePriority(value) {
+  if (value === undefined || value === null) {
+    return 1;
+  }
 
+  if (typeof value === 'number') {
+    if (Number.isFinite(value) && value > 0) {
+      return Math.floor(value);
+    }
+    return 1;
+  }
+
+  if (typeof value === 'string') {
+    const trimmed = value.trim();
+    if (trimmed.length === 0) {
+      return 1;
+    }
+    const parsed = Number(trimmed);
     if (Number.isFinite(parsed) && parsed > 0) {
       return Math.floor(parsed);
     }
+    return 1;
+  }
 
-    return counter++;
-  };
+  return 1;
 }
 
 function normalizeGroupValue(value) {
@@ -276,7 +288,6 @@ export function normalizeUpstreamPayload({
   const effectiveKeywords = Array.isArray(premiumKeywords) ? premiumKeywords : [];
   const keywordPromotionEnabled = allowKeywordPromotion !== false && effectiveKeywords.length > 0;
   const defaultGroupValue = normalizeGroupValue(defaultGroup) || 'normal';
-  const priorityResolver = createPriorityResolver();
   const uniqueMap = new Map();
 
   for (const { entry, sourceKey } of entries) {
@@ -299,10 +310,10 @@ export function normalizeUpstreamPayload({
     const isKeywordPremium = keywordPromotionEnabled && normalizedGroup !== 'premium' && isPremiumName(rawName, effectiveKeywords);
     const finalGroup = isKeywordPremium ? 'premium' : normalizedGroup;
     const enabled = parseEnabled(entry.enabled);
-    const priority = priorityResolver(entry.priority);
+    const priority = resolvePriority(entry.priority);
     const id = generateId(upstreamName, entry.id, baseUrl, sourceKey);
 
-    uniqueMap.set(baseUrl, {
+    const normalizedEntry = {
       id,
       name: cleanedName,
       baseUrl,
@@ -310,7 +321,21 @@ export function normalizeUpstreamPayload({
       enabled,
       priority,
       sourceKey,
-    });
+    };
+
+    if (typeof entry.searchPath === 'string' && entry.searchPath.trim()) {
+      normalizedEntry.searchPath = entry.searchPath.trim();
+    }
+
+    if (typeof entry.detailPath === 'string' && entry.detailPath.trim()) {
+      normalizedEntry.detailPath = entry.detailPath.trim();
+    }
+
+    if (entry.headers && typeof entry.headers === 'object' && !Array.isArray(entry.headers)) {
+      normalizedEntry.headers = { ...entry.headers };
+    }
+
+    uniqueMap.set(baseUrl, normalizedEntry);
   }
 
   const normalized = Array.from(uniqueMap.values());
