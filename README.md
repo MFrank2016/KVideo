@@ -822,6 +822,24 @@ npm start
 
 > **注意**：Apple TV 应用如果仅是 Web 壳应用，不可上架 App Store。此功能仅供个人侧载使用。也可以直接从 iPhone/iPad/Mac 使用 AirPlay 投屏，无需此应用。
 
+### Docker Compose 部署（含 danmu_api 和订阅转换）
+
+`deploy/` 目录提供一个本地复现的 Docker Compose 栈，联合运行 KVideo 应用、内置的 `danmu_api` 弹幕聚合器以及负责将 `MoonTV`/`LunaTV` 源标准化的 `sub-converter`。多账户、`PREMIUM_PASSWORD`、`PERSIST_SESSION` 与 `AD_KEYWORDS` 的配置都集中在 `.env`，可通过 `kvideo/ad_keywords.txt` 和 `kvideo/.env.build` 控制 `广告过滤` 和品牌信息，`danmu_api` 的设置也在可追踪的模板里。
+
+1. `cd deploy`
+2. `bash scripts/prepare-env.sh`（脚本只会在目标文件不存在时拷贝模板，避免覆盖已有 secrets）
+3. 编辑 `.env`（更新 `ACCOUNTS`、`ADMIN_PASSWORD`、`PREMIUM_PASSWORD`、`PERSIST_SESSION`、`SUBSCRIPTION_SOURCES` 等字段）、`kvideo/.env.build`（站点标题/站点名称/描述）、`kvideo/ad_keywords.txt`（广告过滤关键词）、`danmu_api/config/.env`
+4. 运行 `docker compose up -d --build`
+
+`sub-converter` 会按照 `sub-converter/config/upstreams.json` 中定义的 `MoonTV` 与 `LunaTV` 上游自动拉取并分类普通/高级订阅，KVideo 通过 `SUBSCRIPTION_SOURCES`/`NEXT_PUBLIC_SUBSCRIPTION_SOURCES` 直接引用转换结果，`NEXT_PUBLIC_DANMAKU_API_URL` 则指向同一网络内的 `danmu_api` 实例。
+
+健康检查：
+- KVideo: `http://127.0.0.1:${KVIDEO_PORT:-3000}/api/auth`（正常应返回 `hasAuth: true`、`hasPremiumAuth: true` 等字段）
+- danmu_api: `http://127.0.0.1:${DANMU_API_PORT:-9321}/healthz` 或 `http://127.0.0.1:${DANMU_API_PORT:-9321}/api/v2/search/anime?keyword=凡人修仙传`
+- sub-converter: `http://127.0.0.1:${SUB_CONVERTER_PORT:-18080}/healthz`
+
+按需继续调整 `.env` 中的 `AD_KEYWORDS_FILE`、`UPSTASH_REDIS_REST_URL/TOKEN` 等变量即可在这个堆栈里完整复现所有部署需求。
+
 ## 如何更新
 
 ### Vercel 部署
