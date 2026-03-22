@@ -45,3 +45,9 @@ services:
       - ./sub-converter/rules:/app/rules:ro
       - ./sub-converter/data:/app/data
     restart: unless-stopped
+
+
+networks:
+  default:
+    external: true
+    name: kvideo-proxy
