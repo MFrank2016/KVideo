@@ -55,3 +55,7 @@ contrast-test-results.json
 !/deploy/danmu_api/.cache/.gitkeep
 /deploy/sub-converter/data/*
 !/deploy/sub-converter/data/.gitkeep
+/deploy/npm/data/*
+!/deploy/npm/data/.gitkeep
+/deploy/npm/letsencrypt/*
+!/deploy/npm/letsencrypt/.gitkeep
