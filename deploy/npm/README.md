@@ -68,4 +68,3 @@
   (cd deploy && docker compose up -d --build)
   (cd deploy/npm && docker compose up -d)
   ```
-```
