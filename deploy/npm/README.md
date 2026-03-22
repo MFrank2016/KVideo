@@ -11,14 +11,12 @@
    - 可通过 `docker network ls | grep kvideo-proxy` 验证网络是否就绪。
 2. **启动业务堆栈（从仓库根目录）**：
    ```sh
-   cd deploy
-   docker compose up -d --build
+   (cd deploy && docker compose up -d --build)
    ```
    - 该堆栈包含 `kvideo`、`danmu-api`、`sub-converter`，使用外部网络 `kvideo-proxy`。其中 `kvideo` 监听 `127.0.0.1:${KVIDEO_PORT:-3000}`，主机可通过该地址访问；其他在 `kvideo-proxy` 网络（例如 NPM）需使用服务别名 `kvideo:3000`。
 3. **启动 NPM 反向代理（从仓库根目录）**：
    ```sh
-   cd deploy/npm
-   docker compose up -d
+   (cd deploy/npm && docker compose up -d)
    ```
    - 依赖同一个 `kvideo-proxy` 网络，这里不会自动创建网络，因此必须先执行第 1 步。
 4. **访问 NPM UI 并完成首次登录**：
@@ -44,7 +42,7 @@
 1. 在刚刚创建的 Proxy Host 编辑界面，切换到 **SSL** 选项卡。
 2. 勾选 **Request a new SSL Certificate**、**Force SSL**（可选）并填写管理员邮箱。
 3. 点击 **Save** 重新提交设置，NPM 会自动向 Let's Encrypt 发起证书申请。
-4. **Cloudflare 用户注意**：申请阶段请把 `tv.831688.xyz` 的代理状态设置为“DNS only”（灰色云朵），确保 Let's Encrypt 能直接访问 NPM；证书签发后可按需再切换回代理状态。
+4. **Cloudflare 用户注意**：申请阶段请把 `<your-domain>`（例如 `tv.831688.xyz`）的代理状态设置为“DNS only”（灰色云朵），确保 Let's Encrypt 能直接访问 NPM；证书签发后可按需再切换回代理状态。
 
 ## 4. 常见故障排查
 
@@ -67,7 +65,7 @@
 - 重新执行第 1 步：`docker network create kvideo-proxy`。
 - 之后先启动业务堆栈，再运行 NPM stack（均在仓库根目录执行）：
   ```sh
-  cd deploy && docker compose up -d --build
-  cd deploy/npm && docker compose up -d
+  (cd deploy && docker compose up -d --build)
+  (cd deploy/npm && docker compose up -d)
   ```
 ```
