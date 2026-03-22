@@ -41,5 +41,7 @@ services:
     ports:
       - "127.0.0.1:${SUB_CONVERTER_PORT:-18080}:8080"
     volumes:
+      - ./sub-converter/config:/app/config:ro
+      - ./sub-converter/rules:/app/rules:ro
       - ./sub-converter/data:/app/data
     restart: unless-stopped

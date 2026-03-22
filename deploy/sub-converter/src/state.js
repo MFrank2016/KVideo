@@ -1,10 +1,13 @@
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
+import { resolveEnvDir } from './paths.js';
 
 const DEFAULT_SNAPSHOT = Object.freeze({
   normal: [],
   premium: [],
   all: [],
 });
+
+const DEFAULT_DATA_DIR = new URL('../data/', import.meta.url);
 
 function cloneSnapshot(snapshot) {
   return {
@@ -41,7 +44,7 @@ async function readJsonArray(fileUrl) {
   }
 }
 
-export function createStateStore({ dataDir = new URL('../data/', import.meta.url) } = {}) {
+export function createStateStore({ dataDir = resolveEnvDir('DATA_DIR', DEFAULT_DATA_DIR) } = {}) {
   let snapshot = cloneSnapshot(DEFAULT_SNAPSHOT);
   let status = {
     ok: true,
