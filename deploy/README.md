@@ -21,3 +21,9 @@ This directory holds deployment templates and helpers for composing the KVideo s
 | `sub-converter/rules/premium_keywords.txt` | 用于 `sub-converter` 判断 MoonTV 名称是否属于高级频道（AV、番号、福利、无码 等关键词），决定源是归入普通还是高级订阅。 |
 
 Templates stay in this directory so you can track the expected defaults while keeping generated secrets/data local and ignored by git.
+
+## 反向代理与公网域名
+
+- KVideo Docker Compose 堆栈现已加入名为 `kvideo-proxy` 的外部网络，NPM 可复用此网络通过容器名 `kvideo` 访问内部服务。
+- Nginx Proxy Manager (NPM) 堆栈可在 `deploy/npm/` 目录独立启动；仅需运行该目录下的 `docker compose up -d`，无需将其与主堆栈在同一个命令中联动。
+- 运营人员需要阅读 `deploy/npm/README.md`，了解 Proxy Host、证书申请和 Cloudflare 配置等反向代理细节。
