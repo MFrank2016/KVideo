@@ -22,8 +22,13 @@ This directory holds deployment templates and helpers for composing the KVideo s
 
 Templates stay in this directory so you can track the expected defaults while keeping generated secrets/data local and ignored by git.
 
+## 外部网络要求
+
+- `kvideo-proxy` 是主堆栈及 NPM 共享的外部网络，在启动主堆栈前需要先创建它：`docker network create kvideo-proxy`（在仓库根目录执行）。若网络已经存在可跳过此步。
+- 该网络也被 `deploy/npm/README.md` 中的 Nginx Proxy Manager 复用，若需要复查先决条件，请阅读该文档获取网络、Proxy Host 与证书的详细流程。
+
 ## 反向代理与公网域名
 
-- KVideo Docker Compose 堆栈现已加入名为 `kvideo-proxy` 的外部网络，NPM 可复用此网络通过容器名 `kvideo` 访问内部服务。
+- KVideo Docker Compose 堆栈现已加入名为 `kvideo-proxy` 的外部网络，NPM 可复用此网络通过服务别名 `kvideo`（容器名为 `kvideo-compose`）访问内部服务。
 - Nginx Proxy Manager (NPM) 堆栈可在 `deploy/npm/` 目录独立启动；仅需运行该目录下的 `docker compose up -d`，无需将其与主堆栈在同一个命令中联动。
 - 运营人员需要阅读 `deploy/npm/README.md`，了解 Proxy Host、证书申请和 Cloudflare 配置等反向代理细节。

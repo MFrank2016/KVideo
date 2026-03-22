@@ -1,6 +1,6 @@
 # Nginx Proxy Manager 反向代理快速指南
 
-本目录包含 Nginx Proxy Manager (NPM) 的 Docker Compose 模板，适合在已有 KVideo 堆栈之上添加一层公网 HTTPS/域名反向代理。请务必让 NPM 与业务容器共享 `kvideo-proxy` 网络，以便 Proxy Host 通过容器名 `kvideo` 访问内部服务。
+本目录包含 Nginx Proxy Manager (NPM) 的 Docker Compose 模板，适合在已有 KVideo 堆栈之上添加一层公网 HTTPS/域名反向代理。请务必让 NPM 与业务容器共享 `kvideo-proxy` 网络，并在 Proxy Host 中将请求转发到网络别名 `kvideo`（Compose service 名称/网络别名，容器名为 `kvideo-compose`），以便反向代理能访问内部服务。
 
 ## 1. Bootstrap：网络与堆栈
 
@@ -9,13 +9,13 @@
    docker network create kvideo-proxy
    ```
    - 可通过 `docker network ls | grep kvideo-proxy` 验证网络是否就绪。
-2. **启动业务堆栈**：
+2. **启动业务堆栈（从仓库根目录）**：
    ```sh
    cd deploy
    docker compose up -d --build
    ```
-   - 该堆栈包含 `kvideo`、`danmu-api`、`sub-converter`，使用外部网络 `kvideo-proxy` 并绑定到 `127.0.0.1`，从宿主机只能通过 NPM 或本机转发访问 `kvideo:3000`。
-3. **启动 NPM 反向代理**：
+   - 该堆栈包含 `kvideo`、`danmu-api`、`sub-converter`，使用外部网络 `kvideo-proxy`。其中 `kvideo` 监听 `127.0.0.1:${KVIDEO_PORT:-3000}`，主机可通过该地址访问；其他在 `kvideo-proxy` 网络（例如 NPM）需使用服务别名 `kvideo:3000`。
+3. **启动 NPM 反向代理（从仓库根目录）**：
    ```sh
    cd deploy/npm
    docker compose up -d
@@ -30,14 +30,14 @@
 
 1. 打开 NPM 控制台，点击 **Proxy Hosts → Add Proxy Host**。
 2. 填写字段：
-   - **Domain Names**：`tv.831688.xyz`（需在 DNS 中指向本机 IP）。
+   - **Domain Names**：`<your-domain>`（例如 `tv.831688.xyz`，需在 DNS 中指向服务器的公网/管理 IP）。
    - **Scheme**：选择 `http`。
-   - **Forward Hostname / IP**：`kvideo`（容器名）。
+   - **Forward Hostname / IP**：`kvideo`（Compose service 名称/网络别名，容器名为 `kvideo-compose`）。
    - **Forward Port**：`3000`。
    - **Block Common Exploits**：开启，提升安全性。
    - **Websockets Support**：根据需要启用，KVideo 包含 WebSocket 通信。
-3. 点击 **Save** 保存 Proxy Host；保存后该记录会以 `kvideo` 容器为 upstream，NPM 会使用 `kvideo-proxy` 网络连通。
-4. 确保 DNS `tv.831688.xyz` 解析到服务器 IP，否则证书申请时会失败。
+3. 点击 **Save** 保存 Proxy Host；保存后该记录会以 `kvideo` 网络别名为 upstream，NPM 会使用 `kvideo-proxy` 网络连通。
+4. 确保 DNS 指向服务器 IP，否则证书申请时会失败（例如 `tv.831688.xyz`）。
 
 ## 3. Let's Encrypt 证书
 
@@ -56,18 +56,18 @@
 
 ### 4.2 502 Bad Gateway / 连接失败
 
-- 确认 `kvideo` 容器在运行：`docker compose -f deploy/docker-compose.yml ps kvideo`，必要时查看日志 `docker compose -f deploy/docker-compose.yml logs -f kvideo`。
-- Proxy Host 应指向容器名 `kvideo:3000`，HTTP 协议；错误配置会触发 502。
-- 验证网络连通：进入 NPM 容器 `docker compose exec nginx-proxy-manager curl -I http://kvideo:3000`（需先安装 curl），若无法连接说明网络或服务异常。
+- 确认 `kvideo` 服务在运行：`docker compose -f deploy/docker-compose.yml ps kvideo`，必要时查看日志 `docker compose -f deploy/docker-compose.yml logs -f kvideo`。
+- Proxy Host 应指向服务别名 `kvideo:3000`（Compose service 名称/网络别名，容器名为 `kvideo-compose`），使用 HTTP 协议；错误配置会触发 502。
+- 验证网络连通：临时运行一个 curl 容器加入 `kvideo-proxy` 网络，例如 `docker run --rm --network kvideo-proxy curlimages/curl:latest -I http://kvideo:3000`；若无法连接说明网络或服务异常。
 - 检查 `kvideo` 是否绑定在 `kvideo-proxy` 网络，`docker network inspect kvideo-proxy` 应能看到 `kvideo` 和 `kvideo-nginx-proxy-manager`。
 
 ### 4.3 缺少 `kvideo-proxy` 网络
 
 - `docker compose up` 报错 `Network "kvideo-proxy" not found` 意味着网络尚未创建。
 - 重新执行第 1 步：`docker network create kvideo-proxy`。
-- 之后先启动业务堆栈，再运行 NPM stack：
+- 之后先启动业务堆栈，再运行 NPM stack（均在仓库根目录执行）：
   ```sh
   cd deploy && docker compose up -d --build
-  cd ../deploy/npm && docker compose up -d
+  cd deploy/npm && docker compose up -d
   ```
 ```

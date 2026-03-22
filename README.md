@@ -732,7 +732,7 @@ docker run -d -p 3000:3000 \
   --name kvideo kuekhaoyang/kvideo:latest
 ```
 
-> **公开域名/HTTPS 访问（可选）**：若希望在公网通过域名和 Let's Encrypt 访问 KVideo，可在 `deploy/npm/` 按照 Nginx Proxy Manager 的文档启动反向代理层，这会复用同一个 `kvideo-proxy` 网络并通过 UI 创建 Proxy Host + 证书。详情请查阅 `deploy/npm/README.md`。
+> **公开域名/HTTPS 访问（可选）**：若希望在公网通过 `<your-domain>`（例如 `tv.831688.xyz`）和 Let's Encrypt 访问 KVideo，可在 `deploy/npm/` 按照 Nginx Proxy Manager 的文档启动反向代理层，该层复用 `kvideo-proxy` 网络并通过 UI 创建 Proxy Host（转发到服务别名 `kvideo:3000`）与证书。详情请查阅 `deploy/npm/README.md`。
 
 #### 选项 4：传统 Node.js 部署
 
