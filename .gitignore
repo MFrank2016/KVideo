@@ -45,3 +45,13 @@ contrast-test-results.json
 
 # local git worktrees
 .worktrees/
+
+# deploy runtime artifacts
+/deploy/.env
+/deploy/kvideo/.env.build
+/deploy/kvideo/ad_keywords.txt
+/deploy/danmu_api/config/.env
+/deploy/danmu_api/.cache/*
+!/deploy/danmu_api/.cache/.gitkeep
+/deploy/sub-converter/data/*
+!/deploy/sub-converter/data/.gitkeep
