@@ -161,6 +161,9 @@ export async function startService({ port = Number.parseInt(process.env.PORT ?? 
         sourceCount: snapshot.all.length,
         upstreamCount,
       });
+      console.log(
+        `[sub-converter] refresh succeeded: ${snapshot.all.length} sources from ${upstreamCount} upstreams at ${refreshedAt}`,
+      );
     } catch (error) {
       state.markRefreshError(error, {
         refreshedAt,
