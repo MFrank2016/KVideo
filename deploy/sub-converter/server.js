@@ -7,6 +7,14 @@ import { createStateStore } from './src/state.js';
 const DEFAULT_PORT = 8080;
 const DEFAULT_REFRESH_INTERVAL_MS = 21600000;
 
+class UpstreamRefreshError extends Error {
+  constructor(message, upstreamFailures) {
+    super(message);
+    this.name = 'UpstreamRefreshError';
+    this.upstreamFailures = Array.isArray(upstreamFailures) ? upstreamFailures : [];
+  }
+}
+
 function parseRefreshInterval(rawValue) {
   if (!rawValue) {
     return DEFAULT_REFRESH_INTERVAL_MS;
@@ -64,6 +72,26 @@ export function createServer({ getSnapshot, getStatus }) {
   });
 }
 
+export function createRefreshRunner(refreshFn) {
+  let inFlight = null;
+
+  return async function runRefresh() {
+    if (inFlight) {
+      return inFlight;
+    }
+
+    inFlight = (async () => {
+      try {
+        return await refreshFn();
+      } finally {
+        inFlight = null;
+      }
+    })();
+
+    return inFlight;
+  };
+}
+
 function dedupeByBaseUrl(entries) {
   const map = new Map();
   for (const entry of entries) {
@@ -87,8 +115,7 @@ async function buildSnapshot() {
 
   const { results, failures } = await fetchUpstreams(definitions);
   if (failures.length > 0) {
-    const names = failures.map(item => item.definition?.name || 'unknown').join(', ');
-    throw new Error(`Failed to refresh one or more upstreams: ${names}`);
+    throw new UpstreamRefreshError('Failed to refresh one or more upstreams', failures);
   }
 
   const normal = [];
@@ -122,8 +149,9 @@ async function buildSnapshot() {
 
 export async function startService({ port = Number.parseInt(process.env.PORT ?? `${DEFAULT_PORT}`, 10) || DEFAULT_PORT } = {}) {
   const state = createStateStore();
+  await state.hydrateFromDisk();
 
-  async function refresh() {
+  const runRefresh = createRefreshRunner(async () => {
     const refreshedAt = new Date().toISOString();
 
     try {
@@ -134,10 +162,13 @@ export async function startService({ port = Number.parseInt(process.env.PORT ?? 
         upstreamCount,
       });
     } catch (error) {
-      state.markRefreshError(error, { refreshedAt });
+      state.markRefreshError(error, {
+        refreshedAt,
+        upstreamFailures: error?.upstreamFailures,
+      });
       console.error('[sub-converter] refresh failed:', error);
     }
-  }
+  });
 
   const server = createServer({
     getSnapshot: () => state.getSnapshot(),
@@ -146,9 +177,9 @@ export async function startService({ port = Number.parseInt(process.env.PORT ?? 
 
   const refreshIntervalMs = parseRefreshInterval(process.env.REFRESH_INTERVAL_MS);
 
-  await refresh();
+  await runRefresh();
   const timer = setInterval(() => {
-    void refresh();
+    void runRefresh();
   }, refreshIntervalMs);
 
   timer.unref?.();
@@ -160,7 +191,7 @@ export async function startService({ port = Number.parseInt(process.env.PORT ?? 
   await new Promise(resolve => server.listen(port, resolve));
   console.log(`[sub-converter] listening on :${port}`);
 
-  return { server, refresh };
+  return { server, refresh: runRefresh };
 }
 
 if (import.meta.url === `file://${process.argv[1]}`) {

@@ -1,4 +1,4 @@
-import { mkdir, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, writeFile } from 'node:fs/promises';
 
 const DEFAULT_SNAPSHOT = Object.freeze({
   normal: [],
@@ -12,6 +12,33 @@ function cloneSnapshot(snapshot) {
     premium: Array.isArray(snapshot?.premium) ? [...snapshot.premium] : [],
     all: Array.isArray(snapshot?.all) ? [...snapshot.all] : [],
   };
+}
+
+function normalizeUpstreamFailures(upstreamFailures) {
+  if (!Array.isArray(upstreamFailures)) {
+    return undefined;
+  }
+
+  return upstreamFailures.map(item => ({
+    name: item?.name ?? null,
+    url: item?.url ?? null,
+    message: item?.message ?? null,
+    timedOut: Boolean(item?.timedOut),
+    errorName: item?.errorName ?? null,
+  }));
+}
+
+async function readJsonArray(fileUrl) {
+  try {
+    const text = await readFile(fileUrl, 'utf8');
+    const parsed = JSON.parse(text);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch (error) {
+    if (error?.code === 'ENOENT') {
+      return null;
+    }
+    throw error;
+  }
 }
 
 export function createStateStore({ dataDir = new URL('../data/', import.meta.url) } = {}) {
@@ -33,6 +60,37 @@ export function createStateStore({ dataDir = new URL('../data/', import.meta.url
     ]);
   }
 
+  async function hydrateFromDisk() {
+    await mkdir(dataDir, { recursive: true });
+
+    const [normal, premium, all] = await Promise.all([
+      readJsonArray(new URL('normal.json', dataDir)),
+      readJsonArray(new URL('premium.json', dataDir)),
+      readJsonArray(new URL('all.json', dataDir)),
+    ]);
+
+    if (normal === null && premium === null && all === null) {
+      return false;
+    }
+
+    const hydrated = {
+      normal: normal ?? [],
+      premium: premium ?? [],
+      all: all ?? [...(normal ?? []), ...(premium ?? [])],
+    };
+
+    snapshot = cloneSnapshot(hydrated);
+    status = {
+      ...status,
+      hasSnapshot: true,
+      ok: true,
+      sourceCount: snapshot.all.length,
+      hydratedAt: new Date().toISOString(),
+    };
+
+    return true;
+  }
+
   async function commitSnapshot(nextSnapshot, context = {}) {
     const finalized = cloneSnapshot(nextSnapshot);
     await writeSnapshotFiles(finalized);
@@ -45,6 +103,7 @@ export function createStateStore({ dataDir = new URL('../data/', import.meta.url
       lastRefreshAt: context.refreshedAt ?? new Date().toISOString(),
       lastSuccessAt: context.refreshedAt ?? new Date().toISOString(),
       lastError: null,
+      upstreamFailures: undefined,
       sourceCount: context.sourceCount ?? finalized.all.length,
       upstreamCount: context.upstreamCount ?? undefined,
     };
@@ -56,7 +115,7 @@ export function createStateStore({ dataDir = new URL('../data/', import.meta.url
       ok: false,
       lastRefreshAt: context.refreshedAt ?? new Date().toISOString(),
       lastError: error instanceof Error ? error.message : String(error),
-      upstreamFailures: context.upstreamFailures,
+      upstreamFailures: normalizeUpstreamFailures(context.upstreamFailures),
     };
   }
 
@@ -67,6 +126,7 @@ export function createStateStore({ dataDir = new URL('../data/', import.meta.url
     getStatus() {
       return { ...status };
     },
+    hydrateFromDisk,
     commitSnapshot,
     markRefreshError,
   };
