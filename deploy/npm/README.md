@@ -9,12 +9,17 @@
    docker network create kvideo-proxy
    ```
    - 可通过 `docker network ls | grep kvideo-proxy` 验证网络是否就绪。
-2. **启动业务堆栈（从仓库根目录）**：
+2. **准备运行环境（从仓库根目录）**：
+   ```sh
+   (cd deploy && bash scripts/prepare-env.sh)
+   ```
+   - `scripts/prepare-env.sh` 会在 `.env`、`kvideo/.env.build`、`kvideo/ad_keywords.txt` 与 `danmu_api/config/.env` 不存在时拷贝模板，避免覆盖已有 secrets。
+3. **启动业务堆栈（从仓库根目录）**：
    ```sh
    (cd deploy && docker compose up -d --build)
    ```
    - 该堆栈包含 `kvideo`、`danmu-api`、`sub-converter`，使用外部网络 `kvideo-proxy`。其中 `kvideo` 监听 `127.0.0.1:${KVIDEO_PORT:-3000}`，主机可通过该地址访问；其他在 `kvideo-proxy` 网络（例如 NPM）需使用服务别名 `kvideo:3000`。
-3. **启动 NPM 反向代理（从仓库根目录）**：
+4. **启动 NPM 反向代理（从仓库根目录）**：
    ```sh
    (cd deploy/npm && docker compose up -d)
    ```

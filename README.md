@@ -831,7 +831,8 @@ npm start
 1. `cd deploy`
 2. `bash scripts/prepare-env.sh`（脚本只会在目标文件不存在时拷贝模板，避免覆盖已有 secrets）
 3. 编辑 `.env`（更新 `ACCOUNTS`、`ADMIN_PASSWORD`、`PREMIUM_PASSWORD`、`PERSIST_SESSION`、`SUBSCRIPTION_SOURCES` 等字段）、`kvideo/.env.build`（站点标题/站点名称/描述）、`kvideo/ad_keywords.txt`（广告过滤关键词）、`danmu_api/config/.env`
-4. 运行 `docker compose up -d --build`
+4. `docker network create kvideo-proxy`（若已存在可跳过）
+5. 运行 `docker compose up -d --build`
 
 `sub-converter` 会按照 `sub-converter/config/upstreams.json` 中定义的 `MoonTV` 与 `LunaTV` 上游自动拉取并分类普通/高级订阅，KVideo 通过 `SUBSCRIPTION_SOURCES`/`NEXT_PUBLIC_SUBSCRIPTION_SOURCES` 直接引用转换结果，`NEXT_PUBLIC_DANMAKU_API_URL` 则指向同一网络内的 `danmu_api` 实例。
 

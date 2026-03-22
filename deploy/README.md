@@ -7,7 +7,8 @@ This directory holds deployment templates and helpers for composing the KVideo s
 1. `cd deploy` (if you are not already there), then run `scripts/prepare-env.sh` to copy examples into the ignored runtime files (`.env`, `kvideo/.env.build`, `kvideo/ad_keywords.txt`, `danmu_api/config/.env`). The script skips existing files so you can re-run it safely after editing templates only when you delete the generated artifacts first.
 2. Populate `.env` with your `ACCOUNTS` 多账户列表、`ADMIN_PASSWORD`、`PREMIUM_PASSWORD`、`PERSIST_SESSION`、`SUBSCRIPTION_SOURCES` 以及 `AD_KEYWORDS_FILE`/`UPSTASH_*` 等变量；`kvideo/.env.build` 控制站点名称、标题、描述等品牌信息；`kvideo/ad_keywords.txt` 是广告过滤关键词列表；`danmu_api/config/.env` 保存 `danmu_api` 的 TOKEN/端口设置。
 3. `sub-converter` 会根据 `sub-converter/config/upstreams.json`（包含 MoonTV、LunaTV 等上游）拉取原始订阅，并用 `sub-converter/rules/premium_keywords.txt` 将高级/普通源分类，KVideo 的 `SUBSCRIPTION_SOURCES` 直接引用转换后的普通/高级 feeds。
-4. 运行 `docker compose up -d --build` 后，访问 KVideo、`danmu_api` 以及 `sub-converter` 的健康检查确认服务已就绪。
+4. `docker network create kvideo-proxy`（如果网络已经存在可跳过）。
+5. 运行 `docker compose up -d --build` 后，访问 KVideo、`danmu_api` 以及 `sub-converter` 的健康检查确认服务已就绪。
 
 ## File references
 
