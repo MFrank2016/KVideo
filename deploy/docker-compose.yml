@@ -1,0 +1,45 @@
+services:
+  kvideo:
+    build:
+      context: ..
+      dockerfile: deploy/kvideo/Dockerfile
+    container_name: kvideo-compose
+    env_file:
+      - ./.env
+    environment:
+      NODE_ENV: production
+    ports:
+      - "127.0.0.1:${KVIDEO_PORT:-3000}:3000"
+    volumes:
+      - ./kvideo/ad_keywords.txt:/app/config/ad_keywords.txt:ro
+    depends_on:
+      - danmu-api
+      - sub-converter
+    restart: unless-stopped
+
+  danmu-api:
+    image: logvar/danmu-api:latest
+    container_name: kvideo-danmu-api
+    ports:
+      - "127.0.0.1:${DANMU_API_PORT:-9321}:9321"
+    volumes:
+      - ./danmu_api/config:/app/config
+      - ./danmu_api/.cache:/app/.cache
+    restart: unless-stopped
+
+  sub-converter:
+    build:
+      context: ..
+      dockerfile: deploy/sub-converter/Dockerfile
+    container_name: kvideo-sub-converter
+    environment:
+      PORT: 8080
+      REFRESH_INTERVAL_MS: 21600000
+      DATA_DIR: /app/data
+      UPSTREAMS_FILE: /app/config/upstreams.json
+      PREMIUM_KEYWORDS_FILE: /app/rules/premium_keywords.txt
+    ports:
+      - "127.0.0.1:${SUB_CONVERTER_PORT:-18080}:8080"
+    volumes:
+      - ./sub-converter/data:/app/data
+    restart: unless-stopped
