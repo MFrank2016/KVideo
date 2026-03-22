@@ -6,6 +6,7 @@ copy_if_missing() {
   local src="$1"
   local dst="$2"
   if [[ ! -f "$dst" ]]; then
+    mkdir -p "$(dirname "$dst")"
     cp "$src" "$dst"
     echo "Created $dst from $src"
   else
