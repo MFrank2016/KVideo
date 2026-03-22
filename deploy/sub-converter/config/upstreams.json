@@ -1,0 +1,23 @@
+[
+  {
+    "name": "ew",
+    "url": "https://raw.githubusercontent.com/rapier15sapper/ew/refs/heads/main/test.json",
+    "defaultGroup": "normal"
+  },
+  {
+    "name": "moontv",
+    "url": "https://raw.githubusercontent.com/666zmy/MoonTV/refs/heads/main/config.json",
+    "defaultGroup": "normal",
+    "allowKeywordPromotion": true
+  },
+  {
+    "name": "luna-jin18",
+    "url": "https://raw.githubusercontent.com/hafrey1/LunaTV-config/refs/heads/main/jin18.json",
+    "defaultGroup": "normal"
+  },
+  {
+    "name": "luna-jingjian",
+    "url": "https://raw.githubusercontent.com/hafrey1/LunaTV-config/refs/heads/main/jingjian.json",
+    "defaultGroup": "premium"
+  }
+]
